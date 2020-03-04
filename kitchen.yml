@@ -1,0 +1,230 @@
+# Use a kitchen.yml file to define what is required to run Test Kitchen, including drivers,
+# provisioners, platforms, and test suites.
+
+
+# driver_name is the name of a driver that will be used to create platform instances
+# used during cookbook testing. This is the default driver used for all platforms and
+# suites unless a platform or suite specifies a driver to override the default driver
+# for that platform or suite; a driver specified for a suite will override a driver set
+# for a platform
+driver:
+  name: terraform
+
+  # The test fixture Terraform configuration is configured to be the Terraform
+  # root module
+  root_module_directory: test/fixtures/wrapper
+
+
+# provisioner_name specifies how Chef Infra Client will be simulated during testing.
+# chef_zero and chef_solo are the most common provisioners used for testing cookbooks
+provisioner:
+  name: terraform
+
+# verifier_name specifies which application to use when running tests, such as inspec
+verifier:
+  name: terraform
+
+# Platforms provide hooks for overriding the global Test Kitchen plugin
+# configuration to provide platform-specific values
+platforms:
+  - name: centos
+
+    # Use to specify a driver for a platform. This will override the default driver.
+    # In this case, we are just passing variables to the driver (i.e. terraform)
+    driver:
+      variables:
+        instances_ami: ami-ae7bfdb8
+        subnet_availability_zone: us-east-1a
+        instance_port: "8080"
+        region: us-east-1
+
+
+    # The verifier utilizes the / InSpec infrastructure testing framework to verify the
+    # behaviour and state of resources in the Terraform state.
+    verifier:
+      systems:
+
+
+        # The value of the name key is a scalar which is used to refer to the system
+        # for logging purposes.
+        - name: local
+
+          # The customized_inspec_attribute InSpec attribute is configured to
+          # satisfy the inspec_attributes control
+
+          # The value of the attrs_outputs key is a mapping of scalars to scalars which is used to define InSpec profile attributes with
+          # the values of Terraform outputs.
+          #
+          # The use of the attrs_outputs key is only necessary to override the default definitions
+          # of profile attributes with names and values equivalent to the outputs.
+          attrs_outputs:
+            customized_inspec_attribute: static_terraform_output
+
+
+          # The value of the backend key is a scalar which is used to select the InSpec backend
+          # for connections to the system.
+          backend: local
+
+          # A subset of the controls included in the complex_suite InSpec
+          # profile will be executed
+
+          # The value of the controls key is a sequence of scalars which is used to select for
+          # execution against the system a subset of the / InSpec controls of the profile.
+          #
+          # The use of the controls key is only necessary if the system should not be tested
+          # with all of the controls of the profile.
+          #
+          # The scalars must match the names of the controls, not the names of the control files.
+          controls:
+            - inspec_attributes
+            - state_file
+
+        # The value of the name key is a scalar which is used to refer to the system
+        # for logging purposes.
+        - name: remote
+
+          # The value of the attrs key is a sequence of scalars which is used to locate any
+          # InSpec profile attributes files.
+          attrs:
+            - test/integration/complex_suite/centos_attributes.yml
+
+          # The value of the backend key is a scalar which is used to select the InSpec backend
+          # for connections to the system.
+          backend: ssh
+
+
+          # The value of the controls key is a sequence of scalars which is used to select for
+          # execution against the system a subset of the / InSpec controls of the profile.
+          #
+          # The use of the controls key is only necessary if the system should not be tested
+          # with all of the controls of the profile.
+          #
+          # The scalars must match the names of the controls, not the names of the control files.
+          controls:
+            - operating_system
+
+          # The value of the Terraform output named remote_group_public_dns will
+          # be used to obtain the hostnames to target with InSpec
+          # this is output from the test module
+          hosts_output: remote_group_public_dns
+
+          # The generated key pair is configured to be used for the SSH
+          # authentication performed by InSpec
+          key_files:
+            - test/assets/id_rsa
+
+          # The value of the user key is a scalar which is used as the username for authentication with
+          # hosts in the system.
+          #
+          # The user key must be used in combination with a backend which supports user
+          # authentication.
+          user: centos
+
+
+
+        - name: remote2
+          attrs_outputs:
+            vpc_id: vpc_id
+          backend: aws
+          controls:
+            - aws_resources
+
+  - name: ubuntu
+
+    # Use to specify a driver for a platform. This will override the default driver.
+    # In this case, we are just passing variables to the driver (i.e. terraform)
+    driver:
+      variables:
+        instances_ami: ami-1ee65166
+        subnet_availability_zone: us-west-2b
+        instance_port: "8080"
+        region: us-west-2
+
+
+    # The verifier utilizes the / InSpec infrastructure testing framework to verify the
+    # behaviour and state of resources in the Terraform state.
+    verifier:
+      systems:
+
+        # The value of the name key is a scalar which is used to refer to the system
+        # for logging purposes.
+        - name: local
+
+          # The customized_inspec_attribute InSpec attribute is configured to
+          # satisfy the inspec_attributes control
+
+          # The value of the attrs_outputs key is a mapping of scalars to scalars which is used to define InSpec profile attributes with
+          # the values of Terraform outputs.
+          #
+          # The use of the attrs_outputs key is only necessary to override the default definitions
+          # of profile attributes with names and values equivalent to the outputs.
+          attrs_outputs:
+            customized_inspec_attribute: static_terraform_output
+
+          # The value of the backend key is a scalar which is used to select the InSpec backend
+          # for connections to the system.
+          backend: local
+
+          # A subset of the controls included in the complex_suite InSpec
+          # profile will be executed
+
+          # The value of the controls key is a sequence of scalars which is used to select for
+          # execution against the system a subset of the / InSpec controls of the profile.
+          #
+          # The use of the controls key is only necessary if the system should not be tested
+          # with all of the controls of the profile.
+          #
+          # The scalars must match the names of the controls, not the names of the control files.
+          controls:
+            - inspec_attributes
+            - state_file
+
+        # The value of the name key is a scalar which is used to refer to the system
+        # for logging purposes.
+        - name: remote
+
+          # The value of the attrs key is a sequence of scalars which is used to locate any
+          # InSpec profile attributes files.
+          attrs:
+            - test/integration/complex_suite/ubuntu_attributes.yml
+
+          # The value of the backend key is a scalar which is used to select the InSpec backend
+          # for connections to the system.
+          backend: ssh
+
+
+          # The value of the controls key is a sequence of scalars which is used to select for
+          # execution against the system a subset of the / InSpec controls of the profile.
+          #
+          # The use of the controls key is only necessary if the system should not be tested
+          # with all of the controls of the profile.
+          #
+          # The scalars must match the names of the controls, not the names of the control files.
+          controls:
+            - operating_system
+
+          # The value of the Terraform output named remote_group_public_dns will
+          # be used to obtain the hostnames to target with InSpec
+          hosts_output: remote_group_public_dns
+
+          # The generated key pair is configured to be used for the SSH
+          # authentication performed by InSpec
+          key_files:
+            - test/assets/id_rsa
+
+          # The value of the user key is a scalar which is used as the username for authentication with
+          # hosts in the system.
+          #
+          # The user key must be used in combination with a backend which supports user
+          # authentication.
+          user: ubuntu
+
+# Suites include tests and provide additional hooks for overriding the global Test
+# Kitchen plugin configuration
+
+# suites is a collection of test suites, with each suite_name grouping defining an
+# aspect of a cookbook to be tested.
+suites:
+  - # Kitchen-Terraform will assume that the InSpec profile for this suite is
+    # located at test/integration/complex_suite
+    name: complex_suite
